@@ -1,26 +1,100 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, { useEffect } from 'react';
 import './App.css';
+import { connect } from 'react-redux';
+import { ReducerState, TodoItem } from './interfaces';
+import { Dispatch, bindActionCreators } from 'redux';
+import * as appActions from './store/actions'
+import MaterialTable from 'material-table'
 
-function App() {
+interface Props {
+  App: ReducerState
+  getTodoList: Function,
+  addTodo: Function
+  updateTodo: Function
+  deleteTodo: Function
+}
+
+const tableColumns: any  = [
+  {
+    title: 'Title',
+    field: 'title'
+  },
+  {
+    title: 'Description',
+    field: 'description'
+  },
+  {
+    title: 'Due Date',
+    field: 'dueDate',
+    type: 'date'
+  },
+  {
+    title: 'Status',
+    field: 'status',
+    lookup: { 
+      'TODO': 'TODO',
+      'PROCESS': 'PROCESS',
+      'COMPLETED': 'COMPLETED' 
+    },
+    initialEditValue: 'TODO'
+  }
+]
+
+function App(props: Props) {
+
+  const { App: { todos, isLoading, error }} = props
+
+  useEffect(() => {
+    const { getTodoList } = props
+    getTodoList()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function addTodo(newData: TodoItem): Promise<void> {
+    return new Promise(async (resolve) => {
+      await props.addTodo(newData)
+      resolve()
+    })
+  }
+
+  function updateTodo(newData: TodoItem): Promise<void> {
+    return new Promise(async (resolve) => {
+      await props.updateTodo(newData)
+      resolve()
+    })
+  }
+
+  function deleteTodo(newData: TodoItem): Promise<void> {
+    return new Promise(async (resolve) => {
+      await props.deleteTodo(newData)
+      resolve()
+    })
+  }
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <MaterialTable
+        title={error || 'Todo List'}
+        isLoading={isLoading}
+        data={todos}
+        columns={tableColumns}
+        options={{
+          filtering: true,
+          sorting: true
+        }}
+        editable={{
+          onRowAdd: addTodo,
+          onRowUpdate: updateTodo,
+          onRowDelete: deleteTodo
+        }}
+        style={{ maxWidth: 960, margin: '0 auto' }}
+      />
     </div>
   );
 }
 
-export default App;
+const mapStateToProps = (state: ReducerState): any => ({ App: state })
+const mapDispatchToProps = (dispatch: Dispatch) => {
+  return bindActionCreators(appActions, dispatch)
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(App as any);
